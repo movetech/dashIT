@@ -1,0 +1,219 @@
+DashIT is a site to keep track of e-mail messages of various servers (e.g.
+backup reports).
+
+=== Overview ===
+
+DashIT contains of 3 parts:
+- A worker script (worker.php) that is run regularly from a cron job. This
+  script reads out a hardcoded imap-directory. It looks for the latest mail
+  (all mails since the last check on a daily accuracy), filters them for mails
+  from known servers and writes the mails with sender, subject, datetime and
+  content to a mysql-database and connects them to the respective server. The
+  list of servers is located in the database as well.
+
+- A REST-based API (api.php) providing the information to a client. It is based
+  on the php-framework Slim (ext-lib/Slim/). For details about the API see
+  section "REST-API" below.
+
+- A webbased front-end (index.php) displaying the information to the user. It is
+  using the javascript-frameworks QmlWeb (ext-lib/qmlweb/) and jquery-ui
+  (ext-lib/jquery-ui). The UI itself is written in QML.
+
+=== Install ===
+
+1. Move the files to your webserver directory.
+2. Make sure the webserver has the permission to read the files.
+3. Create a database and user for dashIT.
+4. Run init.sh to initialize the config and create the database tables.
+5. Have fun.
+
+=== Files ===
+
+- init.sh               A script used to create a config file and create the
+                        database tables. Should be run by the user during
+                        install.
+- database.sql          SQL-file containing the database structure. Used by
+                        init.sh.
+
+- worker.php:           The worker script.
+
+- api.php:              The REST-API.
+- ext-lib/Slim/:        The Slim-framework used for the REST-API.
+
+- index.php:            The base file of the web-frontend. From here, everything
+                        needed for the frontend is included. Also the QML-View
+                        is initialized here. The actual UI is not in this file.
+- ext-lib/qmlweb/:      The QmlWeb-framework used for the web-frontend.
+- ext-lib/jquery-ui/:   The jQuery-UI-framework used for the web-frontend.
+- qml/main.qml:         The main UI file. Here all the single components
+                        (ServerList, DetailsView, ServerEditor) are created.
+- qml/ServerList.qml:   This file contains the list of servers, which is the
+                        main component of the UI. It includes the header as well
+                        as the button to add a new server. It does neither
+                        include the code showing the details about a server or
+                        the code of the server editing nor is that code included
+                        here. Instead there is only one DetailsView and one
+                        ServerEditor used for all servers together, that is
+                        included from the main.qml.
+- qml/DetailsView.qml:  This file contains the view to show the details about a
+                        single server, which is the calendar and the view of the
+                        single messages. It does contain the button to edit the
+                        server, but not the editor itself.
+- qml/ServerEditor.qml: This file contains the code decribing the UI for editing
+                        the server.
+- qml/Calendar.qml:     This file contains a binding for the jQuery-UI based
+                        calendar widget. It provides a QML-API for the widget
+                        instanciating it imperatively on creation and passing
+                        the properties from QML to the jQuery-UI widget.
+
+=== REST-API ===
+
+GET /servers:           Get an object containing the two properties 'lastUpdate'
+                        which is the datetime of the last run of the worker
+                        script and 'serverList' which is a list of all available
+                        servers as a json-list. Each server has the properties
+                        - serverId:        The internal id of the server. Used
+                                           to specify which server a request is
+                                           addressed to.
+                        - name:            The name of the server.
+                        - sender:          The mail adress the server uses to
+                                           write mails from.
+                        - interval:        The interval in hours in which the
+                                           server will send messages.
+                        - rules:           An array of the rules after which the
+                                           messages are classified as good or
+                                           bad (error message).
+                        - pauses:          An array of pauses in the message
+                                           schedule. Each pause object has the
+                                           properties
+                            - beginWeekday: Weekday of the pause's begin,
+                                            specified as a number 0 (Sun) -
+                                            6 (Sat). -1 stands for "every day".
+                            - beginHour:   Hour of the pause's begin (0-23).
+                            - endWeekday:  Weekday of the pause's end, specified
+                                           as a number 0 (Sun) - 6 (Sat). -1
+                                           stands for "every day".
+                            - endHour:     Hour of the pause's end (0-23).
+                        - history:         An array of objects representing the
+                                           last 8 messages. Each object has the
+                                           properties
+                            - received:    datetime when the message was sent.
+                            - bad:         specifies if the message is an error
+                                           message or not.
+                        Example request: GET /dashIT/api.php/servers
+                        Example response: {
+                                            "lastUpdate": "2013-11-12 07:35",
+                                            "serverList": [{
+                                                "serverId": 1,
+                                                "name": "Example Server",
+                                                "sender": "rsync@example.com",
+                                                "interval": 24,
+                                                "rules": ["error", "faulty"],
+                                                "pauses": [{
+                                                    "beginWeekday": 6
+                                                    "beginHour": 3,
+                                                    "endWeekday": 1,
+                                                    "endHour": 3
+                                                }],
+                                                "history": [{
+                                                    "received": "2013-11-10 23:05",
+                                                    "bad": "1"
+                                                    },
+                                                    {
+                                                    "received": "2013-11-11 23:08",
+                                                    "bad": "0"
+                                                    }]
+                                            }]
+                                          }
+
+GET /servers/id:        Provides an overview over all messages in the last 31
+                        days. Each message has the properties
+                        - messageId:       The internal id of the message. Used
+                                           to specify which message a request is
+                                           addressed to.
+                        - received:        Datetime when the message was
+                                           received.
+                        - bad:             Specifies whether the message was
+                                           classified as faulty.
+
+                        Example request: GET /dashIT/api.php/servers/1
+                        Example response: [{
+                                            "messageId": 1,
+                                            "received": "2013-11-10 23:05",
+                                            "bad": "1"
+                                          },
+                                          {
+                                            "messageId": 2,
+                                            "received": "2013-11-11 23:08",
+                                            "bad": "0"
+                                          }]
+
+GET /servers/id/year/month: Like "GET /servers/id" but for a specific month.
+                            Example request:
+                                GET /dashIT/api.php/servers/1/2013/11
+
+GET /servers/id/year/month/date: Provides an overview over all messages
+                                 on the specified date. Each message has the
+                                 properties
+                                 - messageId
+                                 - received
+                                 - subject: The subject line of the e-mail.
+                                 - message: The e-mail body (content).
+                                 - bad
+                                 Example request:
+                                    GET /dashIT/api.php/servers/1/2013/11/10
+                                 Example response: [{
+                                                "messageId": 1,
+                                                "received": "2013-11-10 23:05",
+                                                "subject": "Backup report"
+                                                "message": "E-Mail text\
+                                                           containing \"error\""
+                                                "bad": "1"
+                                            }
+
+GET /messages/id:       Get all information about one message. The response is
+                        an object with the properties
+                        - messageId
+                        - serverId
+                        - mailId: A unique id of the e-mail used in the mailbox.
+                        - subject
+                        - message
+                        - bad
+
+POST /servers:          Adds a new server. The request must contain the
+                        following keys:
+                        - name: The name of the server to add
+                        - sender: The e-mail adress the server sends messages
+                                  from
+                        - interval: The interval in hours in which the
+                                    server will send messages.
+                        - rules: list of rules after which the messages are
+                                 classified as good or bad.
+                        Examle request:
+                                POST /dashIT/api.php/servers
+                                Form-Data: name=Test&sender=test@example.com&
+                                    interval=7&rules%5B$5D=error&
+                                    rules%5B$5D=faulty&
+                                    pauses%5B0$5D%5BbeginWeekday$5D=5&
+                                    pauses%5B0$5D%5BbeginHour$5D=20&
+                                    pauses%5B0$5D%5BendWeekday$5D=1&
+                                    pauses%5B0$5D%5BendHour$5D=7
+
+PUT /servers/id:        Like "POST /servers" but edits an existing server.
+
+DELETE /servers/id:     Deletes a server from the server list.
+
+=== LICENSE ===
+
+Copyright (C) 2013 movetech Systemberatung <info@movetech.net>
+Copyright (C) 2013 Anton Kreuzkamp <akreuzkamp@web.de>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License (LICENSE.txt) for more details.

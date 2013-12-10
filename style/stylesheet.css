@@ -1,0 +1,27 @@
+input, button {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid lightgrey;
+}
+
+.green {
+    background: greenyellow;
+    padding: 1px;
+}
+.yellow {
+    background: yellow;
+    padding: 1px;
+}
+.red {
+    background: red;
+    padding: 1px;
+}
+
+.calendar-date-red .ui-state-default {
+    color: red;
+}
+.calendar-date-yellow .ui-state-default {
+    color: goldenrod;
+}
+.calendar-date-green .ui-state-default {
+    color: green;
+}
