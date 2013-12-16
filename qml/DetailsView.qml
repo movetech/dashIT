@@ -168,7 +168,21 @@ Item {
                     anchors.fill: parent
 
                     onClicked: {
-                        messageView.messageText = "<b>" + subject + "</b><br><br>" + message + "<br><br>";
+                        // Highlight text matching the rules (Mark why the message is bas)
+                        var text = message;
+                        if (bad === "1") {
+                            for (var i in serverModel.get(openServer).rules) {
+                                var rule = serverModel.get(openServer).rules[i];
+                                if (rule[0] == '/') { // regular expressions
+                                    var regexEnd = rule.lastIndexOf('/');
+                                    var pattern = new RegExp("(" + rule.substring(1, regexEnd) + ")", rule.substring(regexEnd + 1)); // Transfer php regex-string to js regex-string
+                                    text = text.replace(pattern, "<span class=\"highlighted\"><u>$1</span>");
+                                } else { // simple text rules
+                                    text = text.split(rule).join("<span class=\"highlighted\">" + rule + "</span>"); // == search & replace all
+                                }
+                            }
+                        }
+                        messageView.messageText = "<b>" + subject + "</b><br><br>" + text + "<br><br>";
                         messageList.css.mozFilter = "blur(5px)";
                         messageList.css.webkitFilter = "blur(5px)";
                         messageList.css.filter = "blur(5px)";

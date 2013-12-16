@@ -16,6 +16,12 @@ input, button {
     padding: 1px;
 }
 
+.highlighted {
+    color: red;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
 .calendar-date-red .ui-state-default {
     color: red;
 }
