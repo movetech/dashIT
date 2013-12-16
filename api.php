@@ -44,7 +44,7 @@ try {
 // === GET /servers ===
 $app->get('/servers', function () {
     global $pdo;
-    $stm = $pdo->prepare("select * from `servers`");
+    $stm = $pdo->prepare("select * from `servers` order by `name`");
     $stm->execute();
     $serverList = $stm->fetchAll(PDO::FETCH_ASSOC);
     $stm->closeCursor();
