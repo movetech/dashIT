@@ -145,7 +145,7 @@ foreach($mailIds as $mNo => $mId) {
                             ':received' => $header->udate,
                             ':mailId' => $header->message_id,
                             ':subject' => $header->subject,
-                            ':message' => $mail,
+                            ':message' => iconv("UTF-8", "UTF-8//IGNORE", $mail),
                             ':bad' => $bad));
         $stm->closeCursor();
         echo "Done. Classified as " . ($bad ? "bad" : "successful") . ".\n";
