@@ -198,10 +198,6 @@ Item {
         border.color: "lightgrey"
         visible: opacity // If opacity is 0 hide it completely, so it can't be clicked
         opacity: 0
-        // make message scrollable
-        css.overflowX: "hidden"
-        css.overflowY: "auto"
-        css.pointerEvents: "auto"
 
         property string messageText
 
@@ -212,26 +208,32 @@ Item {
         // Message
         Text {
             id: messageLabel
-            width: parent.width - 20
-            x: 10; y: 10
+            anchors.fill: parent
+            anchors.margins: 5
             wrapMode: Text.Wrap
             text: messageView.messageText
+
+            // make message scrollable
+            css.overflowX: "hidden"
+            css.overflowY: "auto"
+            css.pointerEvents: "auto"
         }
 
-        // Click Area
-        MouseArea {
-            width: parent.width
-            // if the text is bigger than the messageView (=> we can scroll) we
-            // need the mouse area to be able to click anywhere no matter how
-            // far we have scrolled, if not we want to be able to click anywhere
-            // in the messageView, so we need the size of that
-            height: Math.max(parent.height, messageLabel.height + 10)
+        // Close Button
+        Image {
+            source: "../style/close.png"
+            width: 24; height: 24
+            anchors { top: parent.top; right: parent.right; rightMargin: 30; topMargin: 10 }
 
-            onClicked: {
-                parent.opacity = 0;
-                messageList.css.mozFilter = "none";
-                messageList.css.webkitFilter = "none";
-                messageList.css.filter = "none";
+            MouseArea {
+                anchors.fill: parent
+
+                onClicked: {
+                    messageView.opacity = 0;
+                    messageList.css.mozFilter = "none";
+                    messageList.css.webkitFilter = "none";
+                    messageList.css.filter = "none";
+                }
             }
         }
     }
