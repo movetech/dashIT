@@ -132,6 +132,11 @@ foreach($mailIds as $mNo => $mId) {
             }
         }
 
+        if ($config->deleteMails)
+            imap_delete($mailbox, $mId); // Delete e-mail
+        else
+            imap_setflag_full($mailbox, $mId, "\\Seen"); // Mark e-mail as read
+
         // insert  message into database (replacing duplicate entries using
         // UNIQUE indices (there is a UNIQUE index for mailId)).
         $stm = $pdo->prepare("replace messages (serverId, received, mailId, subject, message, bad)
@@ -149,6 +154,7 @@ foreach($mailIds as $mNo => $mId) {
     }
 }
 
+imap_expunge($mailbox); // Really delete messages marked as DELETED
 imap_close($mailbox);
 
 // === Delete old mails ===

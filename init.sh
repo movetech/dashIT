@@ -33,6 +33,8 @@ DEFAULTSENDERADDRESS="DashIT <dashIT@"`hostname`">"
 read -p "Please insert the e-mail address to send alarm messages from [$DEFAULTSENDERADDRESS]: " HELPDESKSENDER
 HELPDESKSENDER=${HELPDESKSENDER:-$DEFAULTSENDERADDRESS}
 
+read -p "DashIT can delete mails from the mailbox after reading them. Insert y to delete e-mails or n to not delete. [n]: " DELETEMAILS
+DELETEMAILS=${DELETEMAILS:-n}
 read -p "Please insert the number of months to store the messages in the database. \
 Messages that are older than n month will be deleted from the database. Use -1 to never delete [6]: " HISTORYLENGTH
 HISTORYLENGTH=${HISTORYLENGTH:-6}
@@ -81,6 +83,11 @@ echo "        \"successfulColor\": \"$SUCCESSFULCOLOR\"," >> config.json
 echo "        \"overdueColor\": \"$OVERDUECOLOR\"," >> config.json
 echo "        \"badColor\": \"$BADCOLOR\"" >> config.json
 echo "    }," >> config.json
+if [ "x$DELETEMAILS" == "xy" ]; then
+    echo "    \"deleteMails\": true," >> config.json
+else
+    echo "    \"deleteMails\": false," >> config.json
+fi
 echo "    \"refreshInterval\": $REFRESHINTERVAL," >> config.json
 echo "    \"historyLengthMonths\": $HISTORYLENGTH" >> config.json
 echo "}" >> config.json
