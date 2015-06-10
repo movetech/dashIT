@@ -45,6 +45,12 @@ $stm = $pdo->prepare("select lastUpdate from information limit 1");
 $stm->execute();
 $lastUpdate = substr($stm->fetch(PDO::FETCH_COLUMN, 0), 0, 10);
 $stm->closeCursor();
+if (trim($lastUpdate) == "") {
+    $stm = $pdo->prepare("select DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)");
+    $stm->execute();
+    $lastUpdate = substr($stm->fetch(PDO::FETCH_COLUMN, 0), 0, 10);
+    $stm->closeCursor();
+}
 
 // === Get list of servers. ===
 $stm = $pdo->prepare("select * from `servers`");
